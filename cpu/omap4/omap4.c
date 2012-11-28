@@ -241,7 +241,8 @@ int misc_init_r(void)
 
 #if defined(CONFIG_MACH_BOWSER_SUBTYPE_JEM)
 	/* Only boot into system if battery is in an acceptable condition */
-	check_battery_condition();
+// XXX Battery check disabled as troublesome.
+//	check_battery_condition();
 
 	if (!Init_LCD())
 		Power_on_LCD();

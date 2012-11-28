@@ -1110,8 +1110,9 @@ void Power_on_LCD(void)
 //**************************************************************************************
 void Power_off_LCD(void)
 {
+return 0;
 #ifdef CONFIG_BOWSER_BACKLIGHT_PWM
-	bowser_backlight_set_brightness(BRIGHTNESS_OFF);
+	bowser_backlight_set_brightness(BRIGHTNESS_NORMAL_ON);
 	udelay(250000);
 #endif
 	/* Disable CABC and turn off backlight */
@@ -1708,11 +1709,15 @@ int Init_LCD(void)
 	//Set DPLL for DSI
 	dsi_set_dpll();
 
+#if 0
+// These two are disabled for the second boot as otherwise display
+// does not come alive.
 	//set DSI Phy
 	dsi_set_phy();
 
 	//set DSI protocol engine
 	dsi_set_protocol_engine();
+#endif
 
 	//power on LCD
 	Power_on_LCD();

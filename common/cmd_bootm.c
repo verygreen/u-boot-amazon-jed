@@ -178,7 +178,7 @@ int certificate_signature_verify(u8* Certificate_Ptr)
 		printf(">>>> Signature verification failed!(lv_Return=0x%08X)\n",lv_Return);
 		/* Display a red screen when kernel signature verification failed */
 		show_color((u_int16_t)(0xF800));
-		return lv_Return;   
+		return 0;
 	}
 	hash_sha1.out = (u32*)&sha1_hash[0];
 	hash_sha1.in = (u32*)((u8*)Certificate_Ptr + ISW_hash_struct_ptr->start_offset);
@@ -191,7 +191,7 @@ int certificate_signature_verify(u8* Certificate_Ptr)
 		printf(">>>> SHA verification PPA call failed!(lv_Return=0x%08X)\n",lv_Return);
 		/* Display a red screen when kernel SHA verification PPA call failed */
 		show_color((u_int16_t)(0xF800));
-		return lv_Return;        
+		return 0;
 	}
 
 	lv_Return = memcmp(ISW_hash_ptr, &sha1_hash[0], 20);
@@ -202,7 +202,7 @@ int certificate_signature_verify(u8* Certificate_Ptr)
 		/* Display a red screen when kernel SHA verification failed */
 		show_color((u_int16_t)(0xF800));
 	}
-	return lv_Return;
+	return 0;
 }
 #endif
 
@@ -1504,6 +1504,8 @@ int authentify_image(int mmcc, int start_sector)
 	CERT_Hashes        *ISW_hash_struct_ptr = (CERT_Hashes*)((u8*)load_addr + 52);
 
 
+// We don't really need any signature checks here.
+#if 0
 	/* load first fragment to determine image size thanks to the certificate  */
 	if (mmc_read(mmcc, sector, addr, FIRST_FRAGMENT_SIZE_IN_BLOCKS*512) != 1) {
 		printf("booti: mmc failed to read certificate\n");
@@ -1511,17 +1513,20 @@ int authentify_image(int mmcc, int start_sector)
 	}
 	addr   += FIRST_FRAGMENT_SIZE_IN_BLOCKS*512;
 	sector += FIRST_FRAGMENT_SIZE_IN_BLOCKS;
+#endif
+
+	// The bootimg image is at offset 0x400 from partition start.
+	sector += 2;
 
 	/* Load image */
-        nb_bytes    = ISW_hash_struct_ptr->length + ISW_hash_struct_ptr->start_offset;
-        nb_bytes   -= FIRST_FRAGMENT_SIZE_IN_BLOCKS*512; // removed block which have been already loaded
+        nb_bytes    = 6082720; /* XXX: Superhack for known Amazon kernel */
 
 	if (mmc_read(mmcc, sector, addr, nb_bytes) != 1) {
 		printf("booti: failed to load image\n");
 		return -1;
 	}
 
-        return certificate_signature_verify((unsigned char*)load_addr);
+        return 0; //certificate_signature_verify((unsigned char*)load_addr);
 
 #else /* CONFIG_MMC */
 	return 0;
@@ -1608,7 +1613,7 @@ int do_booti (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		 * again
 		 */
 		load_addr = KERNEL_PHY_LOAD_ADDRESS -
-			(ISW_CERTIFICATE_LENGTH_FULL + CFG_FASTBOOT_MKBOOTIMAGE_PAGE_SIZE);
+			(/*ISW_CERTIFICATE_LENGTH_FULL + */CFG_FASTBOOT_MKBOOTIMAGE_PAGE_SIZE);
 
 		if(authentify_image(mmcc, pte->start) != 0) {
 			printf("booti: Authentification failure\n");
@@ -1616,7 +1621,7 @@ int do_booti (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		}
 
 		/* set the boot.img header */
-		hdr = (unsigned char *)load_addr + ISW_CERTIFICATE_LENGTH_FULL;
+		hdr = (unsigned char *)load_addr/*+ ISW_CERTIFICATE_LENGTH_FULL*/;
 
 		if (memcmp(hdr->magic, BOOT_MAGIC, 8)) {
 			printf("booti: bad boot image magic\n");
